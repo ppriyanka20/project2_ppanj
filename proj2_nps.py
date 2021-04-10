@@ -30,7 +30,7 @@ class NationalSite:
     phone: string
         the phone of a national site (e.g. '(616) 319-7906', '307-344-7381')
     '''
-    def __init__(self, name, address, zipcode, phone, category = ""):
+    def __init__(self, name, address, zipcode, phone, category):
         self.category = category
         self.name = name
         self.address = address
@@ -53,6 +53,7 @@ def build_state_url_dict():
         key is a state name and value is the url
         e.g. {'michigan':'https://www.nps.gov/state/mi/index.htm', ...}
     '''
+
     url = "https://www.nps.gov/index.htm" #initial url to scrape
     response = requests.get(url) #access the data from the webpage
     soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
@@ -88,9 +89,38 @@ def get_site_instance(site_url):
     instance
         a national site instance
     '''
-    pass
+    response = requests.get(site_url) #access the data from the site webpage
+    parkSoup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
 
+    #find the different instance variables: name, category, address, zipcode, phonenumber
+    #if statements check if the information actually exists, otherwise it is assigned none to ensure that nothing crashes
+    #name:
+    if parkSoup.find('div', class_='Hero-titleContainer clearfix').find('a'):
+        name = parkSoup.find('div', class_='Hero-titleContainer clearfix').find('a').text.strip() #access the name of the park
+    else:
+        name = ""
+    #category:
+    if parkSoup.find('span', class_='Hero-designation'):
+        category = parkSoup.find('span', class_='Hero-designation').text.strip() #access the type of the park
+    else:
+        category = ""
+    #address:
+    if parkSoup.find('span', itemprop='addressLocality'):
+        address = parkSoup.find('span', itemprop='addressLocality').text.strip() + ", " + parkSoup.find('span', itemprop='addressRegion').text.strip()
+    else: 
+        address = ""
+    #zipcode:
+    if parkSoup.find('span', itemprop='postalCode'):
+        zip = parkSoup.find('span', itemprop='postalCode').text.strip()
+    else: 
+        zip = ""
+    #phone number:
+    if parkSoup.find('span', itemprop='telephone'):
+        phonenumber = parkSoup.find('span', itemprop='telephone').text.strip()
+    else: 
+        phonenumber = ""
 
+    return NationalSite(name=name, address=address, zipcode=zip, phone=phonenumber, category=category)
 def get_sites_for_state(state_url):
     '''Make a list of national site instances from a state URL.
     
@@ -124,4 +154,4 @@ def get_nearby_places(site_object):
     
 
 if __name__ == "__main__":
-    pass
+    print(get_site_instance("https://www.nps.gov/yose/index.htm").category)
