@@ -30,8 +30,15 @@ class NationalSite:
     phone: string
         the phone of a national site (e.g. '(616) 319-7906', '307-344-7381')
     '''
-    pass
+    def __init__(self, name, address, zipcode, phone, category = ""):
+        self.category = category
+        self.name = name
+        self.address = address
+        self.zipcode = zipcode
+        self.phone = phone
 
+    def info(self):
+        return f"{self.name} ({self.category}): {self.address} {self.zipcode}"
 
 def build_state_url_dict():
     ''' Make a dictionary that maps state name to state page url from "https://www.nps.gov"
@@ -46,8 +53,27 @@ def build_state_url_dict():
         key is a state name and value is the url
         e.g. {'michigan':'https://www.nps.gov/state/mi/index.htm', ...}
     '''
-    pass
-       
+    url = "https://www.nps.gov/index.htm" #initial url to scrape
+    response = requests.get(url) #access the data from the webpage
+    soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
+
+    dropdownMenu = soup.find('ul', class_='dropdown-menu SearchBar-keywordSearch') #access the dropdown menu information
+    all_links = dropdownMenu.find_all('a') #from dropdown menu, get all 'a' tags which refer to each state and it's url
+
+    stateNames = [] #empty list for state names
+    stateUrls = [] #empty list for state urls
+    for link in all_links: #parse through the 'a' tags and only get the urls and the state names
+        stateUrls.append(link.get('href')) #add urls
+        stateNames.append(link.text.strip().lower()) #add stateNames
+
+    state_url_dict = {} #empty dictionary for state: url values
+    url_firsthalf = "https://www.nps.gov" #will concatenate this with the scraped state url
+
+    for i in range(len(stateNames)): #go though the state names and urls and add to the dictionary
+        state_url_dict[stateNames[i]] = url_firsthalf + stateUrls[i]
+
+    print(state_url_dict.items()) #return the dictionary
+
 
 def get_site_instance(site_url):
     '''Make an instances from a national site URL.
