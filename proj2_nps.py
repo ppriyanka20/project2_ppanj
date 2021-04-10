@@ -57,7 +57,7 @@ def build_state_url_dict():
     url = "https://www.nps.gov/index.htm" #initial url to scrape
     response = requests.get(url) #access the data from the webpage
     soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
-
+    
     dropdownMenu = soup.find('ul', class_='dropdown-menu SearchBar-keywordSearch') #access the dropdown menu information
     all_links = dropdownMenu.find_all('a') #from dropdown menu, get all 'a' tags which refer to each state and it's url
 
@@ -73,7 +73,7 @@ def build_state_url_dict():
     for i in range(len(stateNames)): #go though the state names and urls and add to the dictionary
         state_url_dict[stateNames[i]] = url_firsthalf + stateUrls[i]
 
-    print(state_url_dict.items()) #return the dictionary
+    return state_url_dict #return the dictionary
 
 
 def get_site_instance(site_url):
@@ -107,12 +107,12 @@ def get_site_instance(site_url):
     #address:
     if parkSoup.find('span', itemprop='addressLocality'):
         address = parkSoup.find('span', itemprop='addressLocality').text.strip() + ", " + parkSoup.find('span', itemprop='addressRegion').text.strip()
-    else: 
+    else:
         address = ""
     #zipcode:
     if parkSoup.find('span', itemprop='postalCode'):
         zip = parkSoup.find('span', itemprop='postalCode').text.strip()
-    else: 
+    else:
         zip = ""
     #phone number:
     if parkSoup.find('span', itemprop='telephone'):
