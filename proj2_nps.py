@@ -173,14 +173,19 @@ def get_nearby_places(site_object):
     
 
 if __name__ == "__main__":
-    state_urls = build_state_url_dict()
-    userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower()
-    while userinput != "exit":
-        if userinput in state_urls.keys():
-            stateurl = state_urls[userinput]
-            list_of_sites = get_sites_for_state(stateurl)
-            for site in list_of_sites:
-                print(site.info())
-        else:
-            print("\nSorry! Please enter the full name of a valid state.\n")
-        userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower()
+
+    state_urls = build_state_url_dict() #get the initial dictionary of state, url key/values
+    userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #user input
+    
+    while userinput != "exit": #make sure the user is not trying to exit
+        if userinput in state_urls.keys(): #make sure it is a valid search
+
+            stateurl = state_urls[userinput] #search for the specific url
+            list_of_sites = get_sites_for_state(stateurl) #get all the sites for that state
+            num = 1
+            for site in list_of_sites: #print the information for each site
+                print(f"[{num}] {site.info()}")
+                num +=1
+        else: #if it isn't valid prompt them to search again
+            print("\nSorry! Please enter the full name of a valid state.")
+        userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #restart input
