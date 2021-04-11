@@ -12,6 +12,8 @@ BASE_URL = 'https://www.nps.gov'
 CACHE_FILE_NAME = 'cache.json'
 CACHE_DICT = {}
 
+my_api_key = secrets.API_KEY
+
 class NationalSite:
     '''a national site
 
@@ -172,8 +174,39 @@ def get_nearby_places(site_object):
     dict
         a converted API return from MapQuest API
     '''
-    pass
-    
+    baseurl = "http://www.mapquestapi.com/search/v2/radius"
+    params = {'key': my_api_key, 'origin': site_object.zipcode, 'radius': 10, 'maxMatches': 10, 'ambiguities': "ignore", 'outFormat': "json"}
+    mapResponse = make_map_request_using_cache(baseurl, params, CACHE_DICT)
+    #mapquest_json = mapResponse.json()
+    list_of_places = mapResponse['searchResults']
+
+    nearbyplaces_dict = {} #dictionary to be returned
+    for place in list_of_places:
+        name = place['fields']['name']
+        nearbyplaces_dict[name] = {} #set the name of the place as a key, to an empty dictionary
+        #if statements to create a dictionary of each places name mapping to a dictionary of information:
+        if place['fields']['group_sic_code_name_ext']: #if there is a category
+            category = place['fields']['group_sic_code_name_ext'] #set the category to this
+            nearbyplaces_dict[name]['category'] = category #create new key/value in the name dict
+        else:
+            category = "no category" #else there is no category
+            nearbyplaces_dict[name]['category'] = category
+        
+        if place['fields']['address']: #if there is an address
+            address = place['fields']['address'] #set the address to this
+            nearbyplaces_dict[name]['address'] = address
+        else:
+            address = "no address" 
+            nearbyplaces_dict[name]['address'] = address
+
+        if place['fields']['city']: #if there is a city
+            city = place['fields']['city'] #set the city to this
+            nearbyplaces_dict[name]['city'] = city
+        else:
+            city = "no city"
+            nearbyplaces_dict[name]['city'] = city
+    return nearbyplaces_dict
+
 def load_cache():
     try:
         cache_file = open(CACHE_FILE_NAME, 'r')
@@ -201,14 +234,27 @@ def make_url_request_using_cache(url, cache):
         save_cache(cache)
         return cache[url]
 
+def make_map_request_using_cache(url, params, cache):
+    if (url in cache.keys()): # the url is our unique key
+        print("Using cache")
+        return cache[url]
+    else:
+        print("Fetching")
+        response = requests.get(url, params)
+        cache[url] = response.json()
+        save_cache(cache)
+        return cache[url]
+
+
 if __name__ == "__main__":
 
     state_urls = build_state_url_dict() #get the initial dictionary of state, url key/values
     userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #user input
     
-    while userinput != "exit": #make sure the user is not trying to exit
-        if userinput in state_urls.keys(): #make sure it is a valid search
-
+    while True:
+        if userinput == "exit": #make sure the user is not trying to exit
+            break
+        elif userinput in state_urls.keys(): #make sure it is a valid search
             stateurl = state_urls[userinput] #search for the specific url
             list_of_sites = get_sites_for_state(stateurl) #get all the sites for that state
             num = 1
@@ -218,6 +264,29 @@ if __name__ == "__main__":
             for site in list_of_sites: #print the information for each site
                 print(f"[{num}] {site.info()}")
                 num +=1
+            while True:
+                #ask for input again, but this time it's for a number to detail search
+                userinput = input('Choose the number for detail search or "exit" or "back":').lower()
+                if userinput == "exit": #if they want to exit, break
+                    break
+                elif userinput == "back": #if they want to go back
+                    #ask for a new input so the top while loop doesn't break
+                    userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower()
+                    break #break from this while loop
+                elif userinput.isnumeric() and float(userinput).is_integer() and int(float(userinput)) in range(len(list_of_sites)+1):
+                    #else, we check to see if it's a valid number entry
+                    site_in_question = list_of_sites[int(float(userinput))-1] #the site the user wants
+                    nearby_places = get_nearby_places(site_in_question) #get dict of nearby places
+                    print("-----------------------------------")
+                    print(f"Places near {site_in_question.name}")
+                    print("-----------------------------------")
+                    for key in nearby_places.keys():
+                        attributes = nearby_places[key] #get the dict of attributes for that place
+                        print(f"- {key} ({attributes['category']}): {attributes['address']}, {attributes['city']}")
+                else: #it is not a valid input, prompt them again.
+                    print("Invalid input\n")
+                    print("------------------------------------")
+
         else: #if it isn't valid prompt them to search again
             print("\nSorry! Please enter the full name of a valid state.")
-        userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #restart input
+            userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #restart input
