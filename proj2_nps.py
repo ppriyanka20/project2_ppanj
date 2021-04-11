@@ -57,7 +57,7 @@ def build_state_url_dict():
     url = "https://www.nps.gov/index.htm" #initial url to scrape
     response = requests.get(url) #access the data from the webpage
     soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
-    
+
     dropdownMenu = soup.find('ul', class_='dropdown-menu SearchBar-keywordSearch') #access the dropdown menu information
     all_links = dropdownMenu.find_all('a') #from dropdown menu, get all 'a' tags which refer to each state and it's url
 
@@ -121,6 +121,7 @@ def get_site_instance(site_url):
         phonenumber = ""
 
     return NationalSite(name=name, address=address, zipcode=zip, phone=phonenumber, category=category)
+
 def get_sites_for_state(state_url):
     '''Make a list of national site instances from a state URL.
     
@@ -134,7 +135,25 @@ def get_sites_for_state(state_url):
     list
         a list of national site instances
     '''
-    pass
+    url = "https://www.nps.gov/state/mi/index.htm"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
+
+    allSites = soup.find_all('div', class_='col-md-9 col-sm-9 col-xs-12 table-cell list_left') #get all site info for state
+
+    site_link_list = [] #empty list for all the site links
+    firsthalf_url = "https://www.nps.gov" #will concatenate this with the scraped state url
+
+    for site in allSites: #loop to get just the site link endings
+        currentLink = site.find('a').get('href')
+        site_link_list.append(firsthalf_url + currentLink)
+
+    nationalsite_instances = []
+    for site in site_link_list:
+        new_instance = get_site_instance(site)
+        nationalsite_instances.append(new_instance)
+    
+    return nationalsite_instances
 
 
 def get_nearby_places(site_object):
@@ -154,4 +173,4 @@ def get_nearby_places(site_object):
     
 
 if __name__ == "__main__":
-    print(get_site_instance("https://www.nps.gov/yose/index.htm").category)
+    pass
