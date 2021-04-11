@@ -8,6 +8,9 @@ import requests
 import json
 import secrets # file that contains your API key
 
+BASE_URL = 'https://www.nps.gov'
+CACHE_FILE_NAME = 'cache.json'
+CACHE_DICT = {}
 
 class NationalSite:
     '''a national site
@@ -55,8 +58,8 @@ def build_state_url_dict():
     '''
 
     url = "https://www.nps.gov/index.htm" #initial url to scrape
-    response = requests.get(url) #access the data from the webpage
-    soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
+    #response = requests.get(url) #access the data from the webpage
+    soup = BeautifulSoup(make_url_request_using_cache(url, CACHE_DICT), 'html.parser') #create beautiful soup object
 
     dropdownMenu = soup.find('ul', class_='dropdown-menu SearchBar-keywordSearch') #access the dropdown menu information
     all_links = dropdownMenu.find_all('a') #from dropdown menu, get all 'a' tags which refer to each state and it's url
@@ -89,8 +92,8 @@ def get_site_instance(site_url):
     instance
         a national site instance
     '''
-    response = requests.get(site_url) #access the data from the site webpage
-    parkSoup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
+    #response = requests.get(site_url) #access the data from the site webpage
+    parkSoup = BeautifulSoup(make_url_request_using_cache(site_url, CACHE_DICT), 'html.parser') #create beautiful soup object
 
     #find the different instance variables: name, category, address, zipcode, phonenumber
     #if statements check if the information actually exists, otherwise it is assigned none to ensure that nothing crashes
@@ -136,8 +139,8 @@ def get_sites_for_state(state_url):
         a list of national site instances
     '''
     
-    response = requests.get(state_url)
-    soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
+    #response = requests.get(state_url)
+    soup = BeautifulSoup(make_url_request_using_cache(state_url, CACHE_DICT), 'html.parser') #create beautiful soup object
 
     allSites = soup.find_all('div', class_='col-md-9 col-sm-9 col-xs-12 table-cell list_left') #get all site info for state
 
@@ -171,6 +174,32 @@ def get_nearby_places(site_object):
     '''
     pass
     
+def load_cache():
+    try:
+        cache_file = open(CACHE_FILE_NAME, 'r')
+        cache_file_contents = cache_file.read()
+        cache = json.loads(cache_file_contents)
+        cache_file.close()
+    except:
+        cache = {}
+    return cache
+
+def save_cache(cache):
+    cache_file = open(CACHE_FILE_NAME, 'w')
+    contents_to_write = json.dumps(cache)
+    cache_file.write(contents_to_write)
+    cache_file.close()
+
+def make_url_request_using_cache(url, cache):
+    if (url in cache.keys()): # the url is our unique key
+        print("Using cache")
+        return cache[url]
+    else:
+        print("Fetching")
+        response = requests.get(url)
+        cache[url] = response.text
+        save_cache(cache)
+        return cache[url]
 
 if __name__ == "__main__":
 
@@ -183,6 +212,9 @@ if __name__ == "__main__":
             stateurl = state_urls[userinput] #search for the specific url
             list_of_sites = get_sites_for_state(stateurl) #get all the sites for that state
             num = 1
+            print("-----------------------------------")
+            print(f"List of national sites in {userinput}")
+            print("-----------------------------------")
             for site in list_of_sites: #print the information for each site
                 print(f"[{num}] {site.info()}")
                 num +=1
