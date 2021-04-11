@@ -208,26 +208,63 @@ def get_nearby_places(site_object):
     return nearbyplaces_dict
 
 def load_cache():
-    try:
+    '''Loads the file data into a cache dict, which is then returned
+    
+    Parameters
+    ----------
+    none
+    
+    Returns
+    -------
+    dict
+        a dictionary of the cache data, with the keys as urls and values the request information
+    '''
+    try: #see if there is any existing data in the cache file
         cache_file = open(CACHE_FILE_NAME, 'r')
         cache_file_contents = cache_file.read()
-        cache = json.loads(cache_file_contents)
+        cache = json.loads(cache_file_contents) #add this information to our dictionary
         cache_file.close()
-    except:
+    except: #there is no existing data, return a blank dictionary
         cache = {}
     return cache
 
 def save_cache(cache):
-    cache_file = open(CACHE_FILE_NAME, 'w')
+    '''Saves any new cache data to the cache file
+    
+    Parameters
+    ----------
+    cache: dict
+        a dictionary with the cache data. The urls are the keys
+    
+    Returns
+    -------
+    none
+    '''
+    cache_file = open(CACHE_FILE_NAME, 'w') #open the file
     contents_to_write = json.dumps(cache)
-    cache_file.write(contents_to_write)
+    cache_file.write(contents_to_write) #write the new urls and data to the cache file
     cache_file.close()
 
 def make_url_request_using_cache(url, cache):
-    if (url in cache.keys()): # the url is our unique key
+    '''Makes a url request using the cache data. If the url is not already in
+        our cache data, it saves it to the cache data. 
+    
+    Parameters
+    ----------
+    url: string
+        the url used for the request
+    cache: dict
+        the cache dict with the information we are searching through 
+
+    Returns
+    -------
+    string
+        the text of the data received from the request, that is associated with the url
+    '''
+    if (url in cache.keys()): # the url is has already been searched
         print("Using cache")
         return cache[url]
-    else:
+    else: #this is a new request, save the requested data to our cache file and dictionary
         print("Fetching")
         response = requests.get(url)
         cache[url] = response.text
@@ -235,10 +272,27 @@ def make_url_request_using_cache(url, cache):
         return cache[url]
 
 def make_map_request_using_cache(url, params, cache):
-    if (url in cache.keys()): # the url is our unique key
+    '''Makes a url request to MapQuest using the cache data. If the url is not already in
+        our cache data, it saves it to the cache data. 
+
+    Parameters
+    ----------
+    url: string
+        the url used for the request
+    params: dictionary
+        the additional parameters needed for the request
+    cache: dictionary
+        the cache dictionary to search through
+
+    Returns
+    -------
+    string
+        the text of the data received from the MaqQuest request, that is associated with the url
+    '''
+    if (url in cache.keys()): # the url has already been searched
         print("Using cache")
         return cache[url]
-    else:
+    else: #this is a new request, add the info to our cache file and dictionary
         print("Fetching")
         response = requests.get(url, params)
         cache[url] = response.json()
@@ -249,9 +303,9 @@ def make_map_request_using_cache(url, params, cache):
 if __name__ == "__main__":
 
     state_urls = build_state_url_dict() #get the initial dictionary of state, url key/values
-    userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #user input
-    
-    while True:
+    userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #initial user input
+
+    while True: #as long as we don't input exit
         if userinput == "exit": #make sure the user is not trying to exit
             break
         elif userinput in state_urls.keys(): #make sure it is a valid search
@@ -270,10 +324,11 @@ if __name__ == "__main__":
                 if userinput == "exit": #if they want to exit, break
                     break
                 elif userinput == "back": #if they want to go back
-                    #ask for a new input so the top while loop doesn't break
+                    #ask for a new input so the outer while loop doesn't break
                     userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower()
                     break #break from this while loop
-                elif userinput.isnumeric() and float(userinput).is_integer() and int(float(userinput)) in range(len(list_of_sites)+1):
+                elif userinput.isnumeric() and float(userinput) >0 and float(userinput).is_integer()\
+                     and int(float(userinput)) in range(len(list_of_sites)+1):
                     #else, we check to see if it's a valid number entry
                     site_in_question = list_of_sites[int(float(userinput))-1] #the site the user wants
                     nearby_places = get_nearby_places(site_in_question) #get dict of nearby places
