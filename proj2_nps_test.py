@@ -59,9 +59,9 @@ class Test_Part3(unittest.TestCase):
         self.assertEqual(self.wy_list[0].name, "Bighorn Canyon")
         self.assertEqual(self.wy_list[0].category, "National Recreation Area")
         self.assertEqual(self.wy_list[0].address, "Lovell, WY")
-        self.assertEqual(self.wy_list[0].zipcode, "82435")
+        self.assertEqual(self.wy_list[0].zipcode, "82431")
         self.assertEqual(self.wy_list[0].phone, "(307) 548-5406")
-        self.assertEqual(self.wy_list[0].info(),"Bighorn Canyon (National Recreation Area): Lovell, WY 82435")
+        self.assertEqual(self.wy_list[0].info(),"Bighorn Canyon (National Recreation Area): Lovell, WY 82431")
 
 
 class Test_Part4(unittest.TestCase):

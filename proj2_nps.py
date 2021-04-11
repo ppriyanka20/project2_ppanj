@@ -135,8 +135,8 @@ def get_sites_for_state(state_url):
     list
         a list of national site instances
     '''
-    url = "https://www.nps.gov/state/mi/index.htm"
-    response = requests.get(url)
+    
+    response = requests.get(state_url)
     soup = BeautifulSoup(response.text, 'html.parser') #create beautiful soup object
 
     allSites = soup.find_all('div', class_='col-md-9 col-sm-9 col-xs-12 table-cell list_left') #get all site info for state
