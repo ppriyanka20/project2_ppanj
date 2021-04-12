@@ -178,8 +178,24 @@ def get_nearby_places(site_object):
     params = {'key': my_api_key, 'origin': site_object.zipcode, 'radius': 10, 'maxMatches': 10, 'ambiguities': "ignore", 'outFormat': "json"}
     mapResponse = make_map_request_using_cache(baseurl, params, CACHE_DICT)
     #mapquest_json = mapResponse.json()
-    list_of_places = mapResponse['searchResults']
+    return mapResponse
+    #list_of_places = mapResponse['searchResults']
 
+def format_nearby_places(list_of_places):
+    '''formats the dictionary return from the MapQuest API into an easier format of nested dictionaries
+    Each key of the dictionary is a place, and the place maps to another dictionary which has all 
+    the relevant information for that place: the category, address and city
+    
+    Parameters
+    ----------
+    list_of_places: list
+        the list of places, received from the 'searchResults' key in the MapQuest API dict
+
+    Returns
+    -------
+    dict
+        a nested dictionary. The key is the places name, the value is a dictionary of relevant info
+    '''
     nearbyplaces_dict = {} #dictionary to be returned
     for place in list_of_places:
         name = place['fields']['name']
@@ -191,12 +207,12 @@ def get_nearby_places(site_object):
         else:
             category = "no category" #else there is no category
             nearbyplaces_dict[name]['category'] = category
-        
+
         if place['fields']['address']: #if there is an address
             address = place['fields']['address'] #set the address to this
             nearbyplaces_dict[name]['address'] = address
         else:
-            address = "no address" 
+            address = "no address"
             nearbyplaces_dict[name]['address'] = address
 
         if place['fields']['city']: #if there is a city
@@ -306,8 +322,10 @@ if __name__ == "__main__":
     userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower() #initial user input
 
     while True: #as long as we don't input exit
+
         if userinput == "exit": #make sure the user is not trying to exit
             break
+
         elif userinput in state_urls.keys(): #make sure it is a valid search
             stateurl = state_urls[userinput] #search for the specific url
             list_of_sites = get_sites_for_state(stateurl) #get all the sites for that state
@@ -315,29 +333,39 @@ if __name__ == "__main__":
             print("-----------------------------------")
             print(f"List of national sites in {userinput}")
             print("-----------------------------------")
+
             for site in list_of_sites: #print the information for each site
                 print(f"[{num}] {site.info()}")
                 num +=1
+
             while True:
                 #ask for input again, but this time it's for a number to detail search
                 userinput = input('Choose the number for detail search or "exit" or "back":').lower()
+
                 if userinput == "exit": #if they want to exit, break
                     break
+
                 elif userinput == "back": #if they want to go back
                     #ask for a new input so the outer while loop doesn't break
                     userinput = input('Enter a state name (e.g. Michigan, michigan) or "exit":').lower()
                     break #break from this while loop
+
                 elif userinput.isnumeric() and float(userinput) >0 and float(userinput).is_integer()\
                      and int(float(userinput)) in range(len(list_of_sites)+1):
                     #else, we check to see if it's a valid number entry
                     site_in_question = list_of_sites[int(float(userinput))-1] #the site the user wants
-                    nearby_places = get_nearby_places(site_in_question) #get dict of nearby places
+                    nearby_places_dict = get_nearby_places(site_in_question) #get dict of nearby places
+                    list_of_places = nearby_places_dict['searchResults'] #get the relevant list
+                    formatted_places = format_nearby_places(list_of_places) #a nicely formatted dictionary of the nearby places
+
+                    #printing the output of the details on the site:
                     print("-----------------------------------")
                     print(f"Places near {site_in_question.name}")
                     print("-----------------------------------")
-                    for key in nearby_places.keys():
-                        attributes = nearby_places[key] #get the dict of attributes for that place
+                    for key in formatted_places.keys():
+                        attributes = formatted_places[key] #get the dict of attributes for that place
                         print(f"- {key} ({attributes['category']}): {attributes['address']}, {attributes['city']}")
+
                 else: #it is not a valid input, prompt them again.
                     print("Invalid input\n")
                     print("------------------------------------")
