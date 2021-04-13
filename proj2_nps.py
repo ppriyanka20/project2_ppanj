@@ -10,7 +10,8 @@ import secrets # file that contains your API key
 
 BASE_URL = 'https://www.nps.gov'
 CACHE_FILE_NAME = 'cache.json'
-CACHE_DICT = {}
+#CACHE_DICT = {}
+
 
 my_api_key = secrets.API_KEY
 
@@ -61,7 +62,7 @@ def build_state_url_dict():
 
     url = "https://www.nps.gov/index.htm" #initial url to scrape
     #response = requests.get(url) #access the data from the webpage
-    soup = BeautifulSoup(make_url_request_using_cache(url, CACHE_DICT), 'html.parser') #create beautiful soup object
+    soup = BeautifulSoup(make_url_request_using_cache(url), 'html.parser') #create beautiful soup object
 
     dropdownMenu = soup.find('ul', class_='dropdown-menu SearchBar-keywordSearch') #access the dropdown menu information
     all_links = dropdownMenu.find_all('a') #from dropdown menu, get all 'a' tags which refer to each state and it's url
@@ -95,7 +96,7 @@ def get_site_instance(site_url):
         a national site instance
     '''
     #response = requests.get(site_url) #access the data from the site webpage
-    parkSoup = BeautifulSoup(make_url_request_using_cache(site_url, CACHE_DICT), 'html.parser') #create beautiful soup object
+    parkSoup = BeautifulSoup(make_url_request_using_cache(site_url), 'html.parser') #create beautiful soup object
 
     #find the different instance variables: name, category, address, zipcode, phonenumber
     #if statements check if the information actually exists, otherwise it is assigned none to ensure that nothing crashes
@@ -142,7 +143,7 @@ def get_sites_for_state(state_url):
     '''
     
     #response = requests.get(state_url)
-    soup = BeautifulSoup(make_url_request_using_cache(state_url, CACHE_DICT), 'html.parser') #create beautiful soup object
+    soup = BeautifulSoup(make_url_request_using_cache(state_url), 'html.parser') #create beautiful soup object
 
     allSites = soup.find_all('div', class_='col-md-9 col-sm-9 col-xs-12 table-cell list_left') #get all site info for state
 
@@ -153,10 +154,10 @@ def get_sites_for_state(state_url):
         currentLink = site.find('a').get('href')
         site_link_list.append(firsthalf_url + currentLink)
 
-    nationalsite_instances = []
-    for site in site_link_list:
-        new_instance = get_site_instance(site)
-        nationalsite_instances.append(new_instance)
+    nationalsite_instances = [] #empty list that will hold the instances
+    for site in site_link_list: 
+        new_instance = get_site_instance(site) #make the instance
+        nationalsite_instances.append(new_instance) #add to the return list
     
     return nationalsite_instances
 
@@ -174,12 +175,12 @@ def get_nearby_places(site_object):
     dict
         a converted API return from MapQuest API
     '''
+    #baseurl and parameters used for the request
     baseurl = "http://www.mapquestapi.com/search/v2/radius"
     params = {'key': my_api_key, 'origin': site_object.zipcode, 'radius': 10, 'maxMatches': 10, 'ambiguities': "ignore", 'outFormat': "json"}
-    mapResponse = make_map_request_using_cache(baseurl, params, CACHE_DICT)
-    #mapquest_json = mapResponse.json()
+    mapResponse = make_map_request_using_cache(baseurl, params) #making the request, using caching if done before
+
     return mapResponse
-    #list_of_places = mapResponse['searchResults']
 
 def format_nearby_places(list_of_places):
     '''formats the dictionary return from the MapQuest API into an easier format of nested dictionaries
@@ -197,7 +198,8 @@ def format_nearby_places(list_of_places):
         a nested dictionary. The key is the places name, the value is a dictionary of relevant info
     '''
     nearbyplaces_dict = {} #dictionary to be returned
-    for place in list_of_places:
+    
+    for place in list_of_places: #for each site, format it to make it easy to access information later
         name = place['fields']['name']
         nearbyplaces_dict[name] = {} #set the name of the place as a key, to an empty dictionary
         #if statements to create a dictionary of each places name mapping to a dictionary of information:
@@ -212,14 +214,14 @@ def format_nearby_places(list_of_places):
             address = place['fields']['address'] #set the address to this
             nearbyplaces_dict[name]['address'] = address
         else:
-            address = "no address"
+            address = "no address" #else there is no address
             nearbyplaces_dict[name]['address'] = address
 
         if place['fields']['city']: #if there is a city
             city = place['fields']['city'] #set the city to this
             nearbyplaces_dict[name]['city'] = city
         else:
-            city = "no city"
+            city = "no city" #else there is no city
             nearbyplaces_dict[name]['city'] = city
     return nearbyplaces_dict
 
@@ -261,7 +263,7 @@ def save_cache(cache):
     cache_file.write(contents_to_write) #write the new urls and data to the cache file
     cache_file.close()
 
-def make_url_request_using_cache(url, cache):
+def make_url_request_using_cache(url):
     '''Makes a url request using the cache data. If the url is not already in
         our cache data, it saves it to the cache data. 
     
@@ -277,6 +279,8 @@ def make_url_request_using_cache(url, cache):
     string
         the text of the data received from the request, that is associated with the url
     '''
+    cache = load_cache()
+
     if (url in cache.keys()): # the url is has already been searched
         print("Using cache")
         return cache[url]
@@ -287,7 +291,7 @@ def make_url_request_using_cache(url, cache):
         save_cache(cache)
         return cache[url]
 
-def make_map_request_using_cache(url, params, cache):
+def make_map_request_using_cache(url, params):
     '''Makes a url request to MapQuest using the cache data. If the url is not already in
         our cache data, it saves it to the cache data. 
 
@@ -305,16 +309,43 @@ def make_map_request_using_cache(url, params, cache):
     string
         the text of the data received from the MaqQuest request, that is associated with the url
     '''
-    if (url in cache.keys()): # the url has already been searched
+    cache = load_cache()
+
+    request_key = construct_unique_key(url, params)
+
+    if (request_key in cache.keys()): # the url has already been searched
         print("Using cache")
-        return cache[url]
+        return cache[request_key]
     else: #this is a new request, add the info to our cache file and dictionary
         print("Fetching")
         response = requests.get(url, params)
-        cache[url] = response.json()
+        cache[request_key] = response.json()
         save_cache(cache)
-        return cache[url]
+        return cache[request_key]
 
+def construct_unique_key(baseurl, params):
+    ''' constructs a key that is guaranteed to uniquely and 
+    repeatably identify an API request by its baseurl and params
+
+    Parameters
+    ----------
+    baseurl: string
+        The URL for the API endpoint
+    params: dict
+        A dictionary of param:value pairs
+    
+    Returns
+    -------
+    string
+        the unique key as a string
+    '''
+    param_strings = []
+    connector = '_'
+    for k in params.keys():
+        param_strings.append(f'{k}_{params[k]}')
+    param_strings.sort()
+    unique_key = baseurl + connector + connector.join(param_strings)
+    return unique_key
 
 if __name__ == "__main__":
 
