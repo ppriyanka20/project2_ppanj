@@ -271,8 +271,6 @@ def make_url_request_using_cache(url):
     ----------
     url: string
         the url used for the request
-    cache: dict
-        the cache dict with the information we are searching through 
 
     Returns
     -------
@@ -301,8 +299,6 @@ def make_map_request_using_cache(url, params):
         the url used for the request
     params: dictionary
         the additional parameters needed for the request
-    cache: dictionary
-        the cache dictionary to search through
 
     Returns
     -------
